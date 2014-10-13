@@ -28,6 +28,5 @@
 *.app
 
 # Images
-*
 *.jpeg
 *.jpg

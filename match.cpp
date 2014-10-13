@@ -60,6 +60,14 @@ int main( int argc, char** argv )
         if(!success)
             break;
 
+        Mat src;
+        // Sharpening
+        GaussianBlur(img_scene, src, Size(0, 0), 3);
+        addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
+
+        GaussianBlur(img_scene, src, Size(0, 0), 3);
+        addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
+
         cvtColor(img_scene, img_scene_gray, CV_BGR2GRAY);
         //Do your processing here
         //...
@@ -107,7 +115,7 @@ int main( int argc, char** argv )
 
         for( int i = 0; i < descriptors_object.rows; i++ )
         { 
-            if( matches[i].distance < max(3*min_dist, 0.02) )
+            if( matches[i].distance < max(4*min_dist, 0.02) )
             { 
                 good_matches.push_back( matches[i]); 
             }
@@ -175,19 +183,19 @@ int main( int argc, char** argv )
               // //project the reference frame onto the image
               // ponto#d, rot, trans, intrin, distor, dist, resultadoDaProj
               // projectPoints(scene_corners, rvec, tvec, intrinsics, distortion, img_scene );
-            std::cout << imageFramePoints << "\n";
-            line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
-            line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
-            line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+            // std::cout << imageFramePoints << "\n";
+            // line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
+            // line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
+            // line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
 
 
               // std::cout << obj_corners[0] << " " << obj_corners[1] << " " << obj_corners[2] << " " << obj_corners[3] << '\n';
 
-              //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-              // line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
-              // line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
-              // line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
-              // line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
+              // -- Draw lines between the corners (the mapped object in the scene - image_2 )
+              line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
+              line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
+              line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
+              line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
 
               //-- Show detected matches
                imshow( "Good Matches & Object detection", img_scene );
