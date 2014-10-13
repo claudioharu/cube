@@ -6,21 +6,21 @@
 
 #IncludeRegexTransform: 
 
-/home/junior/Desktop/match/match.cpp
+/home/junior/Desktop/cube/match.cpp
 stdio.h
 -
 iostream
 -
 opencv2/core/core.hpp
-/home/junior/Desktop/match/opencv2/core/core.hpp
+/home/junior/Desktop/cube/opencv2/core/core.hpp
 opencv2/features2d/features2d.hpp
-/home/junior/Desktop/match/opencv2/features2d/features2d.hpp
+/home/junior/Desktop/cube/opencv2/features2d/features2d.hpp
 opencv2/highgui/highgui.hpp
-/home/junior/Desktop/match/opencv2/highgui/highgui.hpp
+/home/junior/Desktop/cube/opencv2/highgui/highgui.hpp
 opencv2/calib3d/calib3d.hpp
-/home/junior/Desktop/match/opencv2/calib3d/calib3d.hpp
+/home/junior/Desktop/cube/opencv2/calib3d/calib3d.hpp
 opencv2/nonfree/nonfree.hpp
-/home/junior/Desktop/match/opencv2/nonfree/nonfree.hpp
+/home/junior/Desktop/cube/opencv2/nonfree/nonfree.hpp
 opencv2/imgproc/imgproc.hpp
 -
 

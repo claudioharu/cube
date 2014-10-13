@@ -38,10 +38,10 @@ EQUALS = =
 CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/junior/Desktop/match
+CMAKE_SOURCE_DIR = /home/junior/Desktop/cube
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/junior/Desktop/match
+CMAKE_BINARY_DIR = /home/junior/Desktop/cube
 
 # Include any dependencies generated for this target.
 include CMakeFiles/calib.dir/depend.make
@@ -54,17 +54,17 @@ include CMakeFiles/calib.dir/flags.make
 
 CMakeFiles/calib.dir/match.cpp.o: CMakeFiles/calib.dir/flags.make
 CMakeFiles/calib.dir/match.cpp.o: match.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/junior/Desktop/match/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/junior/Desktop/cube/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/calib.dir/match.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/calib.dir/match.cpp.o -c /home/junior/Desktop/match/match.cpp
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/calib.dir/match.cpp.o -c /home/junior/Desktop/cube/match.cpp
 
 CMakeFiles/calib.dir/match.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/calib.dir/match.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/junior/Desktop/match/match.cpp > CMakeFiles/calib.dir/match.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/junior/Desktop/cube/match.cpp > CMakeFiles/calib.dir/match.cpp.i
 
 CMakeFiles/calib.dir/match.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/calib.dir/match.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/junior/Desktop/match/match.cpp -o CMakeFiles/calib.dir/match.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/junior/Desktop/cube/match.cpp -o CMakeFiles/calib.dir/match.cpp.s
 
 CMakeFiles/calib.dir/match.cpp.o.requires:
 .PHONY : CMakeFiles/calib.dir/match.cpp.o.requires
@@ -139,6 +139,6 @@ CMakeFiles/calib.dir/clean:
 .PHONY : CMakeFiles/calib.dir/clean
 
 CMakeFiles/calib.dir/depend:
-	cd /home/junior/Desktop/match && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/junior/Desktop/match /home/junior/Desktop/match /home/junior/Desktop/match /home/junior/Desktop/match /home/junior/Desktop/match/CMakeFiles/calib.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/junior/Desktop/cube && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/junior/Desktop/cube /home/junior/Desktop/cube /home/junior/Desktop/cube /home/junior/Desktop/cube /home/junior/Desktop/cube/CMakeFiles/calib.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/calib.dir/depend
 

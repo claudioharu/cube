@@ -17,27 +17,27 @@ void cameraPoseFromHomography(const Mat& H, Mat& pose);
 /** @function main */
 int main( int argc, char** argv )
 {
-  // if( argc != 3 )
-  // { readme(); return -1; }
+    // if( argc != 3 )
+    // { readme(); return -1; }
 
 
-  FileStorage fs;
-  fs.open("calibracao.yml", FileStorage::READ);
+    FileStorage fs;
+    fs.open("calibracao.yml", FileStorage::READ);
 
-  Mat intrinsics, distortion;
-  
-  fs["intrinsic"] >> intrinsics;
-  fs["distortion"] >> distortion;
+    Mat intrinsics, distortion;
 
-  std::cout << intrinsics << "\n";
-  std::cout << distortion << "\n";
+    fs["intrinsic"] >> intrinsics;
+    fs["distortion"] >> distortion;
 
-  Mat rvec = Mat(Size(3,1), CV_64F);
-  Mat tvec = Mat(Size(3,1), CV_64F);
+    // std::cout << intrinsics << "\n";
+    // std::cout << distortion << "\n";
+
+    Mat rvec = Mat(Size(3,1), CV_64F);
+    Mat tvec = Mat(Size(3,1), CV_64F);
 
 
-  Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
-  Mat img_scene, img_scene_gray;
+    Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
+    Mat img_scene, img_scene_gray;
 
     VideoCapture cap("cena.avi"); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
@@ -49,6 +49,7 @@ int main( int argc, char** argv )
     VideoWriter outputVideo;
     Size S = Size((int) cap.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
                   (int) cap.get(CV_CAP_PROP_FRAME_HEIGHT));
+    
     int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
     outputVideo.open("output.avi" , ex, cap.get(CV_CAP_PROP_FPS),S, true);
 
@@ -64,118 +65,121 @@ int main( int argc, char** argv )
         //...
       
         //-- Step 1: Detect the keypoints using SURF Detector
-          int minHessian = 400;
+        int minHessian = 400;
 
-          SurfFeatureDetector detector( minHessian );
+        SurfFeatureDetector detector( minHessian );
 
-          std::vector<KeyPoint> keypoints_object, keypoints_scene;
+        std::vector<KeyPoint> keypoints_object, keypoints_scene;
 
-          detector.detect( img_object, keypoints_object );
-          detector.detect( img_scene_gray, keypoints_scene );
+        detector.detect( img_object, keypoints_object );
+        detector.detect( img_scene_gray, keypoints_scene );
 
-          //-- Step 2: Calculate descriptors (feature vectors)
-          SurfDescriptorExtractor extractor;
+        //-- Step 2: Calculate descriptors (feature vectors)
+        SurfDescriptorExtractor extractor;
 
-          Mat descriptors_object, descriptors_scene;
+        Mat descriptors_object, descriptors_scene;
 
-          extractor.compute( img_object, keypoints_object, descriptors_object );
-          extractor.compute( img_scene_gray, keypoints_scene, descriptors_scene );
+        extractor.compute( img_object, keypoints_object, descriptors_object );
+        extractor.compute( img_scene_gray, keypoints_scene, descriptors_scene );
 
 
 
-          //-- Step 3: Matching descriptor vectors using FLANN matcher
-          FlannBasedMatcher matcher;
-          std::vector< DMatch > matches;
-          matcher.match( descriptors_object, descriptors_scene, matches );
+        //-- Step 3: Matching descriptor vectors using FLANN matcher
+        FlannBasedMatcher matcher;
+        std::vector< DMatch > matches;
+        matcher.match( descriptors_object, descriptors_scene, matches );
 
-          double max_dist = 0; double min_dist = 100;
+        double max_dist = 0; double min_dist = 100;
 
-          //-- Quick calculation of max and min distances between keypoints
-          for( int i = 0; i < descriptors_object.rows; i++ )
-          { double dist = matches[i].distance;
+        //-- Quick calculation of max and min distances between keypoints
+        for( int i = 0; i < descriptors_object.rows; i++ )
+        { 
+            double dist = matches[i].distance;
             if( dist < min_dist ) min_dist = dist;
             if( dist > max_dist ) max_dist = dist;
-          }
+        }
 
           // printf("-- Max dist : %f \n", max_dist );
           // printf("-- Min dist : %f \n", min_dist );
 
-          //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
-          std::vector< DMatch > good_matches;
+        //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
+        std::vector< DMatch > good_matches;
 
-          for( int i = 0; i < descriptors_object.rows; i++ )
-          { if( matches[i].distance < max(3*min_dist, 0.02) )
-             { good_matches.push_back( matches[i]); }
-          }
+        for( int i = 0; i < descriptors_object.rows; i++ )
+        { 
+            if( matches[i].distance < max(3*min_dist, 0.02) )
+            { 
+                good_matches.push_back( matches[i]); 
+            }
+        }
 
-          //-- Localize the object
-          std::vector<Point2f> obj;
-          std::vector<Point2f> scene;
+        //-- Localize the object
+        std::vector<Point2f> obj;
+        std::vector<Point2f> scene;
 
-          for( int i = 0; i < good_matches.size(); i++ )
-          {
+        for( int i = 0; i < good_matches.size(); i++ )
+        {
             //-- Get the keypoints from the good matches
             obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
             scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
-          }
+        }
 
 
-          if(good_matches.size() >= 4)
-          {
+        if(good_matches.size() >= 4)
+        {
+            Mat H = findHomography( obj, scene, CV_RANSAC );
+
+            //-- Get the corners from the image_1 ( the object to be "detected" )
+            std::vector<Point2f> obj_corners(4);
+            obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( img_object.cols, 0 );
+            obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); obj_corners[3] = cvPoint( 0, img_object.rows );
+            vector<Point2f> scene_corners(4);
+
+            perspectiveTransform( obj_corners, scene_corners, H);
+
+            vector<Point3d> framePoints;
+            framePoints.push_back( Point3d( 0.0, 0.0, 0.0 ) );
+            framePoints.push_back( Point3d( img_object.cols, 0.0, 0.0 ) );
+            framePoints.push_back( Point3d( 0.0, img_object.cols, 0.0 ) );
+            framePoints.push_back( Point3d( 0.0, 0.0, img_object.cols ) );
 
 
-              Mat H = findHomography( obj, scene, CV_RANSAC );
+            //generate vectors for the points on the chessboard
+            // for (int i=0; i<9; i++)
+            // {
+            //     for (int j=0; j<6; j++)
+            //     {
+            //         boardPoints.push_back( Point3d( 0.0, 0.0, 0.0) );
+            //     }
+            // }
+        //
 
-              //-- Get the corners from the image_1 ( the object to be "detected" )
-              std::vector<Point2f> obj_corners(4);
-              obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( img_object.cols, 0 );
-              obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); obj_corners[3] = cvPoint( 0, img_object.rows );
-              vector<Point2f> scene_corners(4);
+            //SHOW ROTATION AND TRANSLATION VECTORS
+            vector<Point2f> image_points;
+            vector<Point3f> object_points;
+            for(int i = 0; i < 4; i++)
+            {
+                image_points.push_back(scene_corners[i]);
+                object_points.push_back(Point3f(obj_corners[i].x, obj_corners[i].y, 0));
+            }
 
-              perspectiveTransform( obj_corners, scene_corners, H);
+            solvePnP(object_points, image_points, intrinsics, distortion, rvec, tvec);
 
-              vector<Point3d> boardPoints, framePoints;
-              framePoints.push_back( Point3d( 0.0, 0.0, 0.0 ) );
-              framePoints.push_back( Point3d( img_object.cols, 0.0, 0.0 ) );
-              framePoints.push_back( Point3d( 0.0, img_object.cols, 0.0 ) );
-              framePoints.push_back( Point3d( 0.0, 0.0, img_object.cols ) );
-
-
-              //generate vectors for the points on the chessboard
-              for (int i=0; i<9; i++)
-              {
-                for (int j=0; j<6; j++)
-                {
-                  boardPoints.push_back( Point3d( 0.0, 0.0, 0.0) );
-                }
-              }
-              //
-
-                //SHOW ROTATION AND TRANSLATION VECTORS
-              vector<Point2f> image_points;
-              vector<Point3f> object_points;
-              for(int i=0;i<4;++i){
-                    image_points.push_back(scene_corners[i]);
-                    object_points.push_back(Point3f(obj_corners[i].x, obj_corners[i].y, 0));
-              }
-              solvePnP(object_points, image_points, intrinsics, distortion, rvec, tvec, false);
-
-              //find the camera extrinsic parameters
-              // solvePnP( Mat(obj_corners), Mat(obj_corners), intrinsics, distortion, rvec, tvec, false );
-              vector<Point2d> imageFramePoints;
-              projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
+            //find the camera extrinsic parameters
+            // solvePnP( Mat(obj_corners), Mat(obj_corners), intrinsics, distortion, rvec, tvec, false );
+            vector<Point2d> imageFramePoints;
+            projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
 
 
               //cameraPoseFromHomography(H, pose);
               // //project the reference frame onto the image
               // ponto#d, rot, trans, intrin, distor, dist, resultadoDaProj
               // projectPoints(scene_corners, rvec, tvec, intrinsics, distortion, img_scene );
-               std::cout << imageFramePoints;
-              // std::cout << scene_corners;
-              line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
-              line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
-              line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
-       
+            std::cout << imageFramePoints << "\n";
+            line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
+            line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
+            line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+
 
               // std::cout << obj_corners[0] << " " << obj_corners[1] << " " << obj_corners[2] << " " << obj_corners[3] << '\n';
 
