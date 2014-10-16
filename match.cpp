@@ -11,15 +11,11 @@
 
 using namespace cv;
 
-void readme();
 void cameraPoseFromHomography(const Mat& H, Mat& pose);
 
 /** @function main */
 int main( int argc, char** argv )
 {
-    // if( argc != 3 )
-    // { readme(); return -1; }
-
 
     FileStorage fs;
     fs.open("calibracao.yml", FileStorage::READ);
@@ -35,8 +31,13 @@ int main( int argc, char** argv )
     Mat rvec = Mat(Size(3,1), CV_64F);
     Mat tvec = Mat(Size(3,1), CV_64F);
 
-
+    Mat src;
     Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
+
+    GaussianBlur(img_object, src, Size(0, 0), 3);
+    addWeighted(img_object, 1.5, src, -0.5, 0, img_object);
+
+
     Mat img_scene, img_scene_gray;
 
     VideoCapture cap("cena.avi"); // open the default camera
@@ -60,13 +61,12 @@ int main( int argc, char** argv )
         if(!success)
             break;
 
-        Mat src;
+        
         // Sharpening
         GaussianBlur(img_scene, src, Size(0, 0), 3);
         addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
 
-        GaussianBlur(img_scene, src, Size(0, 0), 3);
-        addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
+
 
         cvtColor(img_scene, img_scene_gray, CV_BGR2GRAY);
         //Do your processing here
@@ -152,16 +152,6 @@ int main( int argc, char** argv )
             framePoints.push_back( Point3d( 0.0, 0.0, img_object.cols ) );
 
 
-            //generate vectors for the points on the chessboard
-            // for (int i=0; i<9; i++)
-            // {
-            //     for (int j=0; j<6; j++)
-            //     {
-            //         boardPoints.push_back( Point3d( 0.0, 0.0, 0.0) );
-            //     }
-            // }
-        //
-
             //SHOW ROTATION AND TRANSLATION VECTORS
             vector<Point2f> image_points;
             vector<Point3f> object_points;
@@ -171,35 +161,30 @@ int main( int argc, char** argv )
                 object_points.push_back(Point3f(obj_corners[i].x, obj_corners[i].y, 0));
             }
 
+            //find the camera extrinsic parameters
             solvePnP(object_points, image_points, intrinsics, distortion, rvec, tvec);
 
-            //find the camera extrinsic parameters
-            // solvePnP( Mat(obj_corners), Mat(obj_corners), intrinsics, distortion, rvec, tvec, false );
             vector<Point2d> imageFramePoints;
             projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
 
 
-              //cameraPoseFromHomography(H, pose);
-              // //project the reference frame onto the image
-              // ponto#d, rot, trans, intrin, distor, dist, resultadoDaProj
-              // projectPoints(scene_corners, rvec, tvec, intrinsics, distortion, img_scene );
-            // std::cout << imageFramePoints << "\n";
-            // line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
-            // line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
-            // line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+            // std::cout << obj_corners[0] << " " << obj_corners[1] << " " << obj_corners[2] << " " << obj_corners[3] << '\n';
+
+            // -- Draw lines between the corners (the mapped object in the scene - image_2 )
+            line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
+            line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
+            line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
+            line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
+
+            line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
+            line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
+            line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
 
 
-              // std::cout << obj_corners[0] << " " << obj_corners[1] << " " << obj_corners[2] << " " << obj_corners[3] << '\n';
 
-              // -- Draw lines between the corners (the mapped object in the scene - image_2 )
-              line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
-              line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
-              line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
-              line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
-
-              //-- Show detected matches
-               imshow( "Good Matches & Object detection", img_scene );
-               outputVideo.write(img_scene); 
+            //-- Show detected matches
+            imshow( "Good Matches & Object detection", img_scene );
+            outputVideo.write(img_scene); 
           }
           else
           {
@@ -220,48 +205,5 @@ int main( int argc, char** argv )
   
   waitKey(0);
   return 0;
-  }
-
-void cameraPoseFromHomography(const Mat& H, Mat& pose)
-{
-    pose = Mat::eye(3, 4, CV_32FC1);      // 3x4 matrix, the camera pose
-
-
-
-    float norm1 = (float)norm(H.col(0));  
-    float norm2 = (float)norm(H.col(1));  
-    float tnorm = (norm1 + norm2) / 2.0f; // Normalization value
-
-    Mat p1 = H.col(0);       // Pointer to first column of H
-    Mat p2 = pose.col(0);    // Pointer to first column of pose (empty)
-
-    cv::normalize(p1, p2);   // Normalize the rotation, and copies the column to pose
-
-    p1 = H.col(1);           // Pointer to second column of H
-    p2 = pose.col(1);        // Pointer to second column of pose (empty)
-
-    cv::normalize(p1, p2);   // Normalize the rotation and copies the column to pose
-
-    p1 = pose.col(0);
-    p2 = pose.col(1);
-
-    Mat p3 = p1.cross(p2);   // Computes the cross-product of p1 and p2
-
-
-    // std::cout << p1;
-    // std::cout << "\n";
-
-    
-    Mat c2 = pose.col(2);    // Pointer to third column of pose
-    p3.copyTo(c2);       // Third column is the crossproduct of columns one and two
-
-    pose.col(3) = H.col(2) / tnorm;  //vector t [R|t] is the last column of pose
-
-    std::cout <<  H.col(2) / tnorm  << "\n";
-
 }
 
-
-  /** @function readme */
-  void readme()
-  { std::cout << " Usage: ./SURF_descriptor <img1> <img2>" << std::endl; }
