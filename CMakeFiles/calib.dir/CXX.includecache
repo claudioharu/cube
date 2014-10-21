@@ -23,6 +23,12 @@ opencv2/nonfree/nonfree.hpp
 /home/junior/Desktop/cube/opencv2/nonfree/nonfree.hpp
 opencv2/imgproc/imgproc.hpp
 -
+GL/gl.h
+-
+GL/glut.h
+-
+opencv2/core/opengl_interop.hpp
+-
 
 /usr/local/include/opencv2/calib3d/calib3d.hpp
 opencv2/core/core.hpp
@@ -69,6 +75,16 @@ limits.h
 -
 string.h
 -
+
+/usr/local/include/opencv2/core/opengl_interop.hpp
+opencv2/core/core.hpp
+/usr/local/include/opencv2/core/opencv2/core/core.hpp
+opencv2/core/opengl_interop_deprecated.hpp
+/usr/local/include/opencv2/core/opencv2/core/opengl_interop_deprecated.hpp
+
+/usr/local/include/opencv2/core/opengl_interop_deprecated.hpp
+opencv2/core/core.hpp
+/usr/local/include/opencv2/core/opencv2/core/core.hpp
 
 /usr/local/include/opencv2/core/operations.hpp
 string.h

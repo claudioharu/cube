@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <iostream>
 #include "opencv2/core/core.hpp"
@@ -9,11 +8,20 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
+#include <GL/gl.h>
+#include <GL/glut.h>
+#include <opencv2/core/opengl_interop.hpp>
+
+
 using namespace cv;
 
-void cameraPoseFromHomography(const Mat& H, Mat& pose);
+void displayMe(void*);
 
 /** @function main */
+Mat img_scene;
+    Mat rvec = Mat(Size(3,1), CV_64F);
+    Mat tvec = Mat(Size(3,1), CV_64F);
+
 int main( int argc, char** argv )
 {
 
@@ -28,8 +36,7 @@ int main( int argc, char** argv )
     // std::cout << intrinsics << "\n";
     // std::cout << distortion << "\n";
 
-    Mat rvec = Mat(Size(3,1), CV_64F);
-    Mat tvec = Mat(Size(3,1), CV_64F);
+
 
     Mat src;
     Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
@@ -38,7 +45,7 @@ int main( int argc, char** argv )
     addWeighted(img_object, 1.5, src, -0.5, 0, img_object);
 
 
-    Mat img_scene, img_scene_gray;
+    Mat img_scene_gray;
 
     VideoCapture cap("cena.avi"); // open the default camera
     if(!cap.isOpened())  // check if we succeeded
@@ -53,6 +60,17 @@ int main( int argc, char** argv )
     
     int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
     outputVideo.open("output.avi" , ex, cap.get(CV_CAP_PROP_FPS),S, true);
+
+    namedWindow("window", CV_WINDOW_OPENGL);
+    
+    ogl::Texture2D tex;
+    
+    setOpenGlContext("window");
+
+    
+    setOpenGlDrawCallback("window", displayMe, &tex);
+
+    
 
     while(true)
     {
@@ -139,17 +157,27 @@ int main( int argc, char** argv )
 
             //-- Get the corners from the image_1 ( the object to be "detected" )
             std::vector<Point2f> obj_corners(4);
-            obj_corners[0] = cvPoint(0,0); obj_corners[1] = cvPoint( img_object.cols, 0 );
-            obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); obj_corners[3] = cvPoint( 0, img_object.rows );
+            obj_corners[0] = cvPoint(0,0); 
+            obj_corners[1] = cvPoint( img_object.cols, 0 );
+            obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); 
+            obj_corners[3] = cvPoint( 0, img_object.rows );
             vector<Point2f> scene_corners(4);
 
             perspectiveTransform( obj_corners, scene_corners, H);
 
             vector<Point3d> framePoints;
-            framePoints.push_back( Point3d( 0.0, 0.0, 0.0 ) );
-            framePoints.push_back( Point3d( img_object.cols, 0.0, 0.0 ) );
-            framePoints.push_back( Point3d( 0.0, img_object.cols, 0.0 ) );
-            framePoints.push_back( Point3d( 0.0, 0.0, img_object.cols ) );
+            framePoints.push_back( Point3d( 0.0, 0.0, 0.0 ) ); //0
+            framePoints.push_back( Point3d( 0.0, 0.0, -50 ) ); //1
+
+            framePoints.push_back( Point3d( 50, 0.0, 0.0 ) ); //2
+            framePoints.push_back( Point3d( 50, 0.0, -50.0 ) ); //3
+
+            framePoints.push_back( Point3d( 0, 50.0, 0.0 ) ); //4
+            framePoints.push_back( Point3d( 0.0, 50.0, -50.0 ) ); //5
+
+            framePoints.push_back( Point3d( 50.0, 50.0, 0.0 ) ); //6
+            framePoints.push_back( Point3d( 50.0, 50.0, -50.0 ) ); //7
+
 
 
             //SHOW ROTATION AND TRANSLATION VECTORS
@@ -158,7 +186,7 @@ int main( int argc, char** argv )
             for(int i = 0; i < 4; i++)
             {
                 image_points.push_back(scene_corners[i]);
-                object_points.push_back(Point3f(obj_corners[i].x, obj_corners[i].y, 0));
+                object_points.push_back(Point3f(obj_corners[i].x-img_object.cols/2, obj_corners[i].y-img_object.rows/2, 0));
             }
 
             //find the camera extrinsic parameters
@@ -168,36 +196,62 @@ int main( int argc, char** argv )
             projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
 
 
-            // std::cout << obj_corners[0] << " " << obj_corners[1] << " " << obj_corners[2] << " " << obj_corners[3] << '\n';
-
             // -- Draw lines between the corners (the mapped object in the scene - image_2 )
             line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
             line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
             line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
             line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
 
-            line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(255,0,0), 4 );
-            line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,255,0), 4 );
-            line(img_scene, imageFramePoints[0], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+
+
+            line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[2], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[1], imageFramePoints[3], CV_RGB(0,0,255), 4 );
+
+            line(img_scene, imageFramePoints[0], imageFramePoints[4], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[1], imageFramePoints[5], CV_RGB(0,0,255), 4 );
+
+            line(img_scene, imageFramePoints[2], imageFramePoints[6], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[3], imageFramePoints[7], CV_RGB(0,0,255), 4 );
+
+            line(img_scene, imageFramePoints[4], imageFramePoints[6], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[6], imageFramePoints[7], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[4], imageFramePoints[5], CV_RGB(0,0,255), 4 );
+            line(img_scene, imageFramePoints[5], imageFramePoints[7], CV_RGB(0,0,255), 4 );
 
 
 
+
+
+            // line(img_scene, imageFramePoints[1], imageFramePoints[2], CV_RGB(255,255,0), 4 );
+            // line(img_scene, imageFramePoints[1], imageFramePoints[3], CV_RGB(0,255,255), 4 );
+            // line(img_scene, imageFramePoints[2], imageFramePoints[3], CV_RGB(0,0,0), 4 );
+
+            tex.copyFrom(img_scene);
             //-- Show detected matches
-            imshow( "Good Matches & Object detection", img_scene );
+            
+            // imshow( "window", img_scene );
+            // setOpenGlDrawCallback("window", displayMe);
             outputVideo.write(img_scene); 
           }
           else
           {
-             imshow( "Good Matches & Object detection", img_scene); 
-             outputVideo.write( img_scene);
+            tex.copyFrom(img_scene);
+             // imshow( "window", img_scene); 
+            outputVideo.write( img_scene);
           }
 
+        updateWindow("window");
         // std::cout << s;
         //Show the image
         // imshow("Output", frame);
         //if(waitKey(0) == 27) break;
         if(waitKey(30) >= 0) break;
     }
+
+    setOpenGlDrawCallback("window", 0, 0);
+    destroyAllWindows();
 
   // if( !img_object.data || !img_scene.data )
   // { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
@@ -207,3 +261,89 @@ int main( int argc, char** argv )
   return 0;
 }
 
+
+
+
+void displayMe(void* userdata)
+{
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    ogl::Texture2D* pTex = static_cast<ogl::Texture2D*>(userdata);
+    if (pTex->empty())
+        return;
+
+    glLoadIdentity();
+
+
+
+    glEnable(GL_TEXTURE_2D);
+    pTex->bind();
+
+    Rect_<double> wndRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
+    Rect_<double> texRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
+
+    ogl::render(*pTex, wndRect, texRect);
+
+    pTex->release();
+
+    // Reset transformations
+    glLoadIdentity();
+
+    glScaled(0.5,0.5,0.5);
+    
+    glRotatef(rvec.at<double>(0), 1,0,0);
+    glRotatef(rvec.at<double>(1), 0,1,0);
+    glRotatef(rvec.at<double>(2), 0,0,1);
+
+
+
+    // glTranslatef(tvec.at<double>(0),tvec.at<double>(1),tvec.at<double>(2));
+
+     // White side - BACK
+    glBegin(GL_POLYGON);
+    glColor3f(   1.0,  1.0, 1.0 );
+    glVertex3f(  0.5, -0.5, 0.5 );
+    glVertex3f(  0.5,  0.5, 0.5 );
+    glVertex3f( -0.5,  0.5, 0.5 );
+    glVertex3f( -0.5, -0.5, 0.5 );
+    glEnd();
+     
+    // Purple side - RIGHT
+    glBegin(GL_POLYGON);
+    glColor3f(  1.0,  0.0,  1.0 );
+    glVertex3f( 0.5, -0.5, -0.5 );
+    glVertex3f( 0.5,  0.5, -0.5 );
+    glVertex3f( 0.5,  0.5,  0.5 );
+    glVertex3f( 0.5, -0.5,  0.5 );
+    glEnd();
+     
+    // Green side - LEFT
+    glBegin(GL_POLYGON);
+    glColor3f(   0.0,  1.0,  0.0 );
+    glVertex3f( -0.5, -0.5,  0.5 );
+    glVertex3f( -0.5,  0.5,  0.5 );
+    glVertex3f( -0.5,  0.5, -0.5 );
+    glVertex3f( -0.5, -0.5, -0.5 );
+    glEnd();
+     
+    // Blue side - TOP
+    glBegin(GL_POLYGON);
+    glColor3f(   0.0,  0.0,  1.0 );
+    glVertex3f(  0.5,  0.5,  0.5 );
+    glVertex3f(  0.5,  0.5, -0.5 );
+    glVertex3f( -0.5,  0.5, -0.5 );
+    glVertex3f( -0.5,  0.5,  0.5 );
+    glEnd();
+     
+    // Red side - BOTTOM
+    glBegin(GL_POLYGON);
+    glColor3f(   1.0,  0.0,  0.0 );
+    glVertex3f(  0.5, -0.5, -0.5 );
+    glVertex3f(  0.5, -0.5,  0.5 );
+    glVertex3f( -0.5, -0.5,  0.5 );
+    glVertex3f( -0.5, -0.5, -0.5 );
+    glEnd();
+     
+    glFlush();
+
+}

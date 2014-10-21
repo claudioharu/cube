@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project( calib )
 find_package( OpenCV REQUIRED )
+find_package(OpenGL REQUIRED) 
+find_package(GLUT REQUIRED) 
 add_executable( calib match.cpp )
-target_link_libraries( calib ${OpenCV_LIBS} )
+target_link_libraries( calib ${OpenCV_LIBS} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})

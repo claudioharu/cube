@@ -7,6 +7,8 @@ CMakeFiles/calib.dir/match.cpp.o
  /usr/local/include/opencv2/core/core.hpp
  /usr/local/include/opencv2/core/core_c.h
  /usr/local/include/opencv2/core/mat.hpp
+ /usr/local/include/opencv2/core/opengl_interop.hpp
+ /usr/local/include/opencv2/core/opengl_interop_deprecated.hpp
  /usr/local/include/opencv2/core/operations.hpp
  /usr/local/include/opencv2/core/types_c.h
  /usr/local/include/opencv2/core/version.hpp

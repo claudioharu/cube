@@ -34,9 +34,6 @@ RM = /usr/bin/cmake -E remove -f
 # Escaping for special characters.
 EQUALS = =
 
-# The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/bin/ccmake
-
 # The top-level source directory on which CMake was run.
 CMAKE_SOURCE_DIR = /home/junior/Desktop/cube
 
@@ -103,6 +100,15 @@ calib: /usr/local/lib/libopencv_features2d.so.2.4.9
 calib: /usr/local/lib/libopencv_core.so.2.4.9
 calib: /usr/local/lib/libopencv_contrib.so.2.4.9
 calib: /usr/local/lib/libopencv_calib3d.so.2.4.9
+calib: /usr/lib/x86_64-linux-gnu/libGLU.so
+calib: /usr/lib/x86_64-linux-gnu/libGL.so
+calib: /usr/lib/x86_64-linux-gnu/libSM.so
+calib: /usr/lib/x86_64-linux-gnu/libICE.so
+calib: /usr/lib/x86_64-linux-gnu/libX11.so
+calib: /usr/lib/x86_64-linux-gnu/libXext.so
+calib: /usr/lib/x86_64-linux-gnu/libglut.so
+calib: /usr/lib/x86_64-linux-gnu/libXmu.so
+calib: /usr/lib/x86_64-linux-gnu/libXi.so
 calib: /usr/lib/x86_64-linux-gnu/libGLU.so
 calib: /usr/lib/x86_64-linux-gnu/libGL.so
 calib: /usr/lib/x86_64-linux-gnu/libSM.so
