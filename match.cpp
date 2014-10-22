@@ -63,8 +63,11 @@ int main( int argc, char** argv )
 
     namedWindow("window", CV_WINDOW_OPENGL);
     
+
     ogl::Texture2D tex;
-    
+
+    tex.create(S, cv::ogl::Texture2D::RGB, false);
+
     setOpenGlContext("window");
 
     
@@ -79,7 +82,7 @@ int main( int argc, char** argv )
         if(!success)
             break;
 
-        
+            
         // Sharpening
         GaussianBlur(img_scene, src, Size(0, 0), 3);
         addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
@@ -208,13 +211,10 @@ int main( int argc, char** argv )
             line(img_scene, imageFramePoints[0], imageFramePoints[2], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[2], imageFramePoints[3], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[1], imageFramePoints[3], CV_RGB(0,0,255), 4 );
-
             line(img_scene, imageFramePoints[0], imageFramePoints[4], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[1], imageFramePoints[5], CV_RGB(0,0,255), 4 );
-
             line(img_scene, imageFramePoints[2], imageFramePoints[6], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[3], imageFramePoints[7], CV_RGB(0,0,255), 4 );
-
             line(img_scene, imageFramePoints[4], imageFramePoints[6], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[6], imageFramePoints[7], CV_RGB(0,0,255), 4 );
             line(img_scene, imageFramePoints[4], imageFramePoints[5], CV_RGB(0,0,255), 4 );
@@ -222,13 +222,14 @@ int main( int argc, char** argv )
 
 
 
-
+            // std::cout << imageFramePoints[0];
 
             // line(img_scene, imageFramePoints[1], imageFramePoints[2], CV_RGB(255,255,0), 4 );
             // line(img_scene, imageFramePoints[1], imageFramePoints[3], CV_RGB(0,255,255), 4 );
             // line(img_scene, imageFramePoints[2], imageFramePoints[3], CV_RGB(0,0,0), 4 );
 
             tex.copyFrom(img_scene);
+
             //-- Show detected matches
             
             // imshow( "window", img_scene );
@@ -282,6 +283,7 @@ void displayMe(void* userdata)
     Rect_<double> wndRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
     Rect_<double> texRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
 
+
     ogl::render(*pTex, wndRect, texRect);
 
     pTex->release();
@@ -291,59 +293,115 @@ void displayMe(void* userdata)
 
     glScaled(0.5,0.5,0.5);
     
-    glRotatef(rvec.at<double>(0), 1,0,0);
-    glRotatef(rvec.at<double>(1), 0,1,0);
-    glRotatef(rvec.at<double>(2), 0,0,1);
+    // glMatrixMode(GL_PROJECTION);
+
+    glRotatef(rvec.at<double>(0)*10, 1,0,0);
+    glRotatef(rvec.at<double>(1)*10, 0,1,0);
+    glRotatef(rvec.at<double>(2)*10, 0,0,1);
+
+    glScaled(0.5,0.5,0.5);
+    glScaled(0.5,0.5,0.5);
+    glScaled(0.5,0.5,0.5);
+    glScaled(0.5,0.5,0.5);
+
+    // glTranslatef(10.5f, 0.0f, 0.0f);  // Move right and into the screen
+    // glTranslatef(tvec.at<double>(0),0,0);//tvec.at<double>(1)-129,tvec.at<double>(2)/50);
+    // glTranslatef(0,tvec.at<double>(1),0);
+
+    // glTranslatef(tvec.at<double>(0)-10,tvec.at<double>(1)-129,tvec.at<double>(2)/50);
+
+    // std::cout << tvec;
+
+    glBegin(GL_QUADS);  
+      glColor3f(0.0f, 1.0f, 0.0f); // Green
+
+      glVertex3f( 1.0f, 1.0f, 0.0f);
+      glVertex3f(-1.0f, 1.0f, 0.0f);
+      glVertex3f(-1.0f, 1.0f,  1.0f);
+      glVertex3f( 1.0f, 1.0f,  1.0f);
+ 
+      // Bottom face (y = -1.0f)
+      glColor3f(1.0f, 0.5f, 0.0f);     // Orange
+      glVertex3f( 1.0f, -1.0f,  1.0f);
+      glVertex3f(-1.0f, -1.0f,  1.0f);
+      glVertex3f(-1.0f, -1.0f, 0.0f);
+      glVertex3f( 1.0f, -1.0f, 0.0f);
+ 
+      // Front face  (z = 1.0f)
+      glColor3f(1.0f, 0.0f, 0.0f);     // Red
+      glVertex3f( 1.0f,  1.0f, 1.0f);
+      glVertex3f(-1.0f,  1.0f, 1.0f);
+      glVertex3f(-1.0f, -1.0f, 1.0f);
+      glVertex3f( 1.0f, -1.0f, 1.0f);
+ 
+      // Back face (z = -1.0f)
+      glColor3f(1.0f, 1.0f, 0.0f);     // Yellow
+      glVertex3f( 1.0f, -1.0f, 0.0f);
+      glVertex3f(-1.0f, -1.0f, 0.0f);
+      glVertex3f(-1.0f,  1.0f, 0.0f);
+      glVertex3f( 1.0f,  1.0f, 0.0f);
+ 
+      // Left face (x = -1.0f)
+      glColor3f(0.0f, 0.0f, 1.0f);     // Blue
+      glVertex3f(-1.0f,  1.0f,  1.0f);
+      glVertex3f(-1.0f,  1.0f, 0.0f);
+      glVertex3f(-1.0f, -1.0f, 0.0f);
+      glVertex3f(-1.0f, -1.0f,  1.0f);
+ 
+      // Right face (x = 1.0f)
+      glColor3f(1.0f, 0.0f, 1.0f);     // Magenta
+      glVertex3f(1.0f,  1.0f, 0.0f);
+      glVertex3f(1.0f,  1.0f,  1.0f);
+      glVertex3f(1.0f, -1.0f,  1.0f);
+      glVertex3f(1.0f, -1.0f, 0.0f);
+   glEnd();  // End of drawing color-cube
 
 
-
-    // glTranslatef(tvec.at<double>(0),tvec.at<double>(1),tvec.at<double>(2));
-
-     // White side - BACK
-    glBegin(GL_POLYGON);
-    glColor3f(   1.0,  1.0, 1.0 );
-    glVertex3f(  0.5, -0.5, 0.5 );
-    glVertex3f(  0.5,  0.5, 0.5 );
-    glVertex3f( -0.5,  0.5, 0.5 );
-    glVertex3f( -0.5, -0.5, 0.5 );
-    glEnd();
+    //  // White side - BACK
+    // glBegin(GL_POLYGON);
+    // glColor3f(   1.0,  1.0, 1.0 );
+    // glVertex3f(  0.5, -0.5, 0.5 );
+    // glVertex3f(  0.5,  0.5, 0.5 );
+    // glVertex3f( -0.5,  0.5, 0.5 );
+    // glVertex3f( -0.5, -0.5, 0.5 );
+    // glEnd();
      
-    // Purple side - RIGHT
-    glBegin(GL_POLYGON);
-    glColor3f(  1.0,  0.0,  1.0 );
-    glVertex3f( 0.5, -0.5, -0.5 );
-    glVertex3f( 0.5,  0.5, -0.5 );
-    glVertex3f( 0.5,  0.5,  0.5 );
-    glVertex3f( 0.5, -0.5,  0.5 );
-    glEnd();
+    // // Purple side - RIGHT
+    // glBegin(GL_POLYGON);
+    // glColor3f(  1.0,  0.0,  1.0 );
+    // glVertex3f( 0.5, -0.5, -0.5 );
+    // glVertex3f( 0.5,  0.5, -0.5 );
+    // glVertex3f( 0.5,  0.5,  0.5 );
+    // glVertex3f( 0.5, -0.5,  0.5 );
+    // glEnd();
      
-    // Green side - LEFT
-    glBegin(GL_POLYGON);
-    glColor3f(   0.0,  1.0,  0.0 );
-    glVertex3f( -0.5, -0.5,  0.5 );
-    glVertex3f( -0.5,  0.5,  0.5 );
-    glVertex3f( -0.5,  0.5, -0.5 );
-    glVertex3f( -0.5, -0.5, -0.5 );
-    glEnd();
+    // // Green side - LEFT
+    // glBegin(GL_POLYGON);
+    // glColor3f(   0.0,  1.0,  0.0 );
+    // glVertex3f( -0.5, -0.5,  0.5 );
+    // glVertex3f( -0.5,  0.5,  0.5 );
+    // glVertex3f( -0.5,  0.5, -0.5 );
+    // glVertex3f( -0.5, -0.5, -0.5 );
+    // glEnd();
      
-    // Blue side - TOP
-    glBegin(GL_POLYGON);
-    glColor3f(   0.0,  0.0,  1.0 );
-    glVertex3f(  0.5,  0.5,  0.5 );
-    glVertex3f(  0.5,  0.5, -0.5 );
-    glVertex3f( -0.5,  0.5, -0.5 );
-    glVertex3f( -0.5,  0.5,  0.5 );
-    glEnd();
+    // // Blue side - TOP
+    // glBegin(GL_POLYGON);
+    // glColor3f(   0.0,  0.0,  1.0 );
+    // glVertex3f(  0.5,  0.5,  0.5 );
+    // glVertex3f(  0.5,  0.5, -0.5 );
+    // glVertex3f( -0.5,  0.5, -0.5 );
+    // glVertex3f( -0.5,  0.5,  0.5 );
+    // glEnd();
      
-    // Red side - BOTTOM
-    glBegin(GL_POLYGON);
-    glColor3f(   1.0,  0.0,  0.0 );
-    glVertex3f(  0.5, -0.5, -0.5 );
-    glVertex3f(  0.5, -0.5,  0.5 );
-    glVertex3f( -0.5, -0.5,  0.5 );
-    glVertex3f( -0.5, -0.5, -0.5 );
-    glEnd();
+    // // Red side - BOTTOM
+    // glBegin(GL_POLYGON);
+    // glColor3f(   1.0,  0.0,  0.0 );
+    // glVertex3f(  0.5, -0.5, -0.5 );
+    // glVertex3f(  0.5, -0.5,  0.5 );
+    // glVertex3f( -0.5, -0.5,  0.5 );
+    // glVertex3f( -0.5, -0.5, -0.5 );
+    // glEnd();
      
-    glFlush();
+    // glFlush();
 
 }
