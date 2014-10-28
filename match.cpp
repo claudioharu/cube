@@ -15,12 +15,22 @@
 
 using namespace cv;
 
-void displayMe(void*);
-
 /** @function main */
+void displayMe(void*);
+static void Redraw (void*);
+// double fovx,fovy,focalLength,aspectRatio; Point2d principalPt;
+VideoWriter opengl;
+
+
 Mat img_scene;
-    Mat rvec = Mat(Size(3,1), CV_64F);
-    Mat tvec = Mat(Size(3,1), CV_64F);
+Mat rvec = Mat(Size(3,1), CV_64F);
+Mat tvec = Mat(Size(3,1), CV_64F);
+int height, width;
+Mat rotation; 
+Mat intrinsics, distortion;
+
+Mat viewMatrix(4, 4, CV_64F); 
+
 
 int main( int argc, char** argv )
 {
@@ -28,15 +38,15 @@ int main( int argc, char** argv )
     FileStorage fs;
     fs.open("calibracao.yml", FileStorage::READ);
 
-    Mat intrinsics, distortion;
 
     fs["intrinsic"] >> intrinsics;
     fs["distortion"] >> distortion;
 
-    // std::cout << intrinsics << "\n";
+    std::cout << intrinsics << "\n";
     // std::cout << distortion << "\n";
 
 
+    // calibrationMatrixValues(intrinsics, Size(640,480), 0.0, 0.0, fovx, fovy, focalLength, principalPt, aspectRatio);
 
     Mat src;
     Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
@@ -62,36 +72,42 @@ int main( int argc, char** argv )
     outputVideo.open("output.avi" , ex, cap.get(CV_CAP_PROP_FPS),S, true);
 
     namedWindow("window", CV_WINDOW_OPENGL);
-    
 
-    ogl::Texture2D tex;
+    // ogl::Texture2D tex;
 
-    tex.create(S, cv::ogl::Texture2D::RGB, false);
+    // tex.create(S, cv::ogl::Texture2D::RGB, false);
+
+    opengl.open("outOpengl.avi" , ex, cap.get(CV_CAP_PROP_FPS),S, true );
 
     setOpenGlContext("window");
 
     
-    setOpenGlDrawCallback("window", displayMe, &tex);
+    setOpenGlDrawCallback("window", Redraw);
 
+    height = (int) cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+    width = (int) cap.get(CV_CAP_PROP_FRAME_WIDTH);
+
+    resizeWindow("window", width, height);
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGB);
+    glutInitWindowSize( width, height  );
+    // glutCreateWindow("Realidade Aumentada");
     
-
     while(true)
     {
         //cap >> frame; // get a new frame from camera
         bool success = cap.read(img_scene); 
         if(!success)
             break;
-
-            
+     
         // Sharpening
         GaussianBlur(img_scene, src, Size(0, 0), 3);
         addWeighted(img_scene, 1.5, src, -0.5, 0, img_scene);
 
 
-
         cvtColor(img_scene, img_scene_gray, CV_BGR2GRAY);
-        //Do your processing here
-        //...
+
       
         //-- Step 1: Detect the keypoints using SURF Detector
         int minHessian = 400;
@@ -110,7 +126,6 @@ int main( int argc, char** argv )
 
         extractor.compute( img_object, keypoints_object, descriptors_object );
         extractor.compute( img_scene_gray, keypoints_scene, descriptors_scene );
-
 
 
         //-- Step 3: Matching descriptor vectors using FLANN matcher
@@ -182,7 +197,6 @@ int main( int argc, char** argv )
             framePoints.push_back( Point3d( 50.0, 50.0, -50.0 ) ); //7
 
 
-
             //SHOW ROTATION AND TRANSLATION VECTORS
             vector<Point2f> image_points;
             vector<Point3f> object_points;
@@ -199,12 +213,26 @@ int main( int argc, char** argv )
             projectPoints(framePoints, rvec, tvec, intrinsics, distortion, imageFramePoints );
 
 
+            Rodrigues(rvec, rotation);
+
+            viewMatrix = Mat::zeros(4, 4, CV_64FC1);
+
+            for(int row = 0; row < 3; row++)
+            {
+               for(int col = 0; col < 3; col++)
+               {
+                  viewMatrix.at<double>(row, col) = rotation.at<double>(row, col);
+               }
+               viewMatrix.at<double>(row, 3) = tvec.at<double>(row, 0);
+            }
+            viewMatrix.at<double>(3, 3) = 1.0;
+
+
             // -- Draw lines between the corners (the mapped object in the scene - image_2 )
             line( img_scene, scene_corners[0] , scene_corners[1] , Scalar(0, 255, 0), 4 );
             line( img_scene, scene_corners[1] , scene_corners[2] , Scalar( 0, 255, 0), 4 );
             line( img_scene, scene_corners[2] , scene_corners[3] , Scalar( 0, 255, 0), 4 );
             line( img_scene, scene_corners[3] , scene_corners[0], Scalar( 0, 255, 0), 4 );
-
 
 
             line(img_scene, imageFramePoints[0], imageFramePoints[1], CV_RGB(0,0,255), 4 );
@@ -222,186 +250,152 @@ int main( int argc, char** argv )
 
 
 
-            // std::cout << imageFramePoints[0];
-
-            // line(img_scene, imageFramePoints[1], imageFramePoints[2], CV_RGB(255,255,0), 4 );
-            // line(img_scene, imageFramePoints[1], imageFramePoints[3], CV_RGB(0,255,255), 4 );
-            // line(img_scene, imageFramePoints[2], imageFramePoints[3], CV_RGB(0,0,0), 4 );
-
-            tex.copyFrom(img_scene);
-
-            //-- Show detected matches
-            
-            // imshow( "window", img_scene );
-            // setOpenGlDrawCallback("window", displayMe);
             outputVideo.write(img_scene); 
           }
           else
           {
-            tex.copyFrom(img_scene);
-             // imshow( "window", img_scene); 
+
             outputVideo.write( img_scene);
           }
 
         updateWindow("window");
-        // std::cout << s;
-        //Show the image
-        // imshow("Output", frame);
-        //if(waitKey(0) == 27) break;
+
         if(waitKey(30) >= 0) break;
     }
 
     setOpenGlDrawCallback("window", 0, 0);
     destroyAllWindows();
 
-  // if( !img_object.data || !img_scene.data )
-  // { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
-
-  
   waitKey(0);
   return 0;
 }
 
 
-
-
-void displayMe(void* userdata)
+static void DrawOpencvImage( Mat* image )
 {
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    Mat aux;
+    flip(*image,aux,0);
+    glDrawPixels(width,height,GL_BGR_EXT,GL_UNSIGNED_BYTE,aux.data);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
 
-    ogl::Texture2D* pTex = static_cast<ogl::Texture2D*>(userdata);
-    if (pTex->empty())
-        return;
+static void Redraw (void*)
+{
+    glClearColor(0.0, 0.0, 0.0, 0.0);
 
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0,width, 0.0, height);
+    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    DrawOpencvImage( &img_scene );
 
-
-    glEnable(GL_TEXTURE_2D);
-    pTex->bind();
-
-    Rect_<double> wndRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
-    Rect_<double> texRect=Rect_<double>(0.0, 0.0, 1.0, 1.0);
-
-
-    ogl::render(*pTex, wndRect, texRect);
-
-    pTex->release();
-
-    // Reset transformations
-    glLoadIdentity();
-
-    glScaled(0.5,0.5,0.5);
+    Mat cvToGl = Mat::eye(4, 4, CV_64F); 
+    cvToGl.at<double>(1, 1) = -1; // Invert the y axis 
+    cvToGl.at<double>(2, 2) = -1; // invert the z axis 
+    viewMatrix = cvToGl * viewMatrix;
     
-    // glMatrixMode(GL_PROJECTION);
-
-    glRotatef(rvec.at<double>(0)*10, 1,0,0);
-    glRotatef(rvec.at<double>(1)*10, 0,1,0);
-    glRotatef(rvec.at<double>(2)*10, 0,0,1);
-
-    glScaled(0.5,0.5,0.5);
-    glScaled(0.5,0.5,0.5);
-    glScaled(0.5,0.5,0.5);
-    glScaled(0.5,0.5,0.5);
-
-    // glTranslatef(10.5f, 0.0f, 0.0f);  // Move right and into the screen
-    // glTranslatef(tvec.at<double>(0),0,0);//tvec.at<double>(1)-129,tvec.at<double>(2)/50);
-    // glTranslatef(0,tvec.at<double>(1),0);
-
-    // glTranslatef(tvec.at<double>(0)-10,tvec.at<double>(1)-129,tvec.at<double>(2)/50);
-
-    // std::cout << tvec;
-
-    glBegin(GL_QUADS);  
-      glColor3f(0.0f, 1.0f, 0.0f); // Green
-
-      glVertex3f( 1.0f, 1.0f, 0.0f);
-      glVertex3f(-1.0f, 1.0f, 0.0f);
-      glVertex3f(-1.0f, 1.0f,  1.0f);
-      glVertex3f( 1.0f, 1.0f,  1.0f);
- 
-      // Bottom face (y = -1.0f)
-      glColor3f(1.0f, 0.5f, 0.0f);     // Orange
-      glVertex3f( 1.0f, -1.0f,  1.0f);
-      glVertex3f(-1.0f, -1.0f,  1.0f);
-      glVertex3f(-1.0f, -1.0f, 0.0f);
-      glVertex3f( 1.0f, -1.0f, 0.0f);
- 
-      // Front face  (z = 1.0f)
-      glColor3f(1.0f, 0.0f, 0.0f);     // Red
-      glVertex3f( 1.0f,  1.0f, 1.0f);
-      glVertex3f(-1.0f,  1.0f, 1.0f);
-      glVertex3f(-1.0f, -1.0f, 1.0f);
-      glVertex3f( 1.0f, -1.0f, 1.0f);
- 
-      // Back face (z = -1.0f)
-      glColor3f(1.0f, 1.0f, 0.0f);     // Yellow
-      glVertex3f( 1.0f, -1.0f, 0.0f);
-      glVertex3f(-1.0f, -1.0f, 0.0f);
-      glVertex3f(-1.0f,  1.0f, 0.0f);
-      glVertex3f( 1.0f,  1.0f, 0.0f);
- 
-      // Left face (x = -1.0f)
-      glColor3f(0.0f, 0.0f, 1.0f);     // Blue
-      glVertex3f(-1.0f,  1.0f,  1.0f);
-      glVertex3f(-1.0f,  1.0f, 0.0f);
-      glVertex3f(-1.0f, -1.0f, 0.0f);
-      glVertex3f(-1.0f, -1.0f,  1.0f);
- 
-      // Right face (x = 1.0f)
-      glColor3f(1.0f, 0.0f, 1.0f);     // Magenta
-      glVertex3f(1.0f,  1.0f, 0.0f);
-      glVertex3f(1.0f,  1.0f,  1.0f);
-      glVertex3f(1.0f, -1.0f,  1.0f);
-      glVertex3f(1.0f, -1.0f, 0.0f);
-   glEnd();  // End of drawing color-cube
+    // std::cout << viewMatrix << "\n";
+    GLdouble pr[16], mv[16];
+    double fx,fy,cx,cy;
 
 
-    //  // White side - BACK
-    // glBegin(GL_POLYGON);
-    // glColor3f(   1.0,  1.0, 1.0 );
-    // glVertex3f(  0.5, -0.5, 0.5 );
-    // glVertex3f(  0.5,  0.5, 0.5 );
-    // glVertex3f( -0.5,  0.5, 0.5 );
-    // glVertex3f( -0.5, -0.5, 0.5 );
-    // glEnd();
-     
-    // // Purple side - RIGHT
-    // glBegin(GL_POLYGON);
-    // glColor3f(  1.0,  0.0,  1.0 );
-    // glVertex3f( 0.5, -0.5, -0.5 );
-    // glVertex3f( 0.5,  0.5, -0.5 );
-    // glVertex3f( 0.5,  0.5,  0.5 );
-    // glVertex3f( 0.5, -0.5,  0.5 );
-    // glEnd();
-     
-    // // Green side - LEFT
-    // glBegin(GL_POLYGON);
-    // glColor3f(   0.0,  1.0,  0.0 );
-    // glVertex3f( -0.5, -0.5,  0.5 );
-    // glVertex3f( -0.5,  0.5,  0.5 );
-    // glVertex3f( -0.5,  0.5, -0.5 );
-    // glVertex3f( -0.5, -0.5, -0.5 );
-    // glEnd();
-     
-    // // Blue side - TOP
-    // glBegin(GL_POLYGON);
-    // glColor3f(   0.0,  0.0,  1.0 );
-    // glVertex3f(  0.5,  0.5,  0.5 );
-    // glVertex3f(  0.5,  0.5, -0.5 );
-    // glVertex3f( -0.5,  0.5, -0.5 );
-    // glVertex3f( -0.5,  0.5,  0.5 );
-    // glEnd();
-     
-    // // Red side - BOTTOM
-    // glBegin(GL_POLYGON);
-    // glColor3f(   1.0,  0.0,  0.0 );
-    // glVertex3f(  0.5, -0.5, -0.5 );
-    // glVertex3f(  0.5, -0.5,  0.5 );
-    // glVertex3f( -0.5, -0.5,  0.5 );
-    // glVertex3f( -0.5, -0.5, -0.5 );
-    // glEnd();
-     
-    // glFlush();
+    fx = intrinsics.at<double>(0, 0);
+    fy = intrinsics.at<double>(1, 1);
+    cx = intrinsics.at<double>(0, 2);
+    cy = intrinsics.at<double>(1, 2);
 
+    double np = 0.39;
+    double fp = 100.0;
+
+
+    pr[0] = 2 * fx / width;
+    pr[1] = 0;
+    pr[2] = 0;
+    pr[3] = 0;
+
+    pr[4] = 0;
+    pr[5] = 2 * fy / height;
+    pr[6] = 0;
+    pr[7] = 0;
+
+    pr[8]  = (2 * cx / width) - 1;
+    pr[9]  = (2 * cy / height) - 1;
+    pr[10] = (fp+np)/(fp-np);
+    pr[11] =  1;
+
+    pr[12] = 0;
+    pr[13] = 0;
+    pr[14] = -2*fp*np/(fp-np);
+    pr[15] = 0;
+
+
+    mv[0]  = viewMatrix.at<double>(0, 0);
+    mv[1]  = viewMatrix.at<double>(1, 0);
+    mv[2]  = viewMatrix.at<double>(2, 0);
+    mv[3]  = 0;
+
+    mv[4]  = viewMatrix.at<double>(0, 1);
+    mv[5]  = viewMatrix.at<double>(1, 1);
+    mv[6]  = viewMatrix.at<double>(2, 1);
+    mv[7]  = 0;
+
+    mv[8]  = -viewMatrix.at<double>(0, 2);
+    mv[9]  = -viewMatrix.at<double>(1, 2);
+    mv[10] = -viewMatrix.at<double>(2, 2);
+    mv[11] = 0;
+
+    mv[12] = 0;
+    mv[13] = 0;
+    mv[14] = 0;
+    mv[15] = 1;
+
+
+    float pos[4] = { 0.0f, 10.0f, 0.0f, 0.0f };
+    glLightfv( GL_LIGHT0, GL_POSITION, pos );
+
+    float white[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, red );
+    glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, white );
+    glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 50.0f );
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    // // glLoadMatrixd(mtsaiopengl_projection);
+    // glLoadMatrixd(m);
+
+    glLoadMatrixd(pr);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    glLoadMatrixd(mv);
+  
+    glPushMatrix();  
+
+    glScaled(0.1,0.1,1);
+    glScaled(0.5,0.5,1);
+    glTranslatef(0,1,0);
+  
+    glRotatef(90, 1.0, 0.0, 0.0);
+    // glutSolidTeapot(1.0);
+    glutSolidCube(1.0);
+    glPopMatrix();
+
+
+    Mat aux = Mat(height, width, CV_8UC3);
+    glReadPixels(0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, aux.data);
+    flip(aux,aux,0);
+
+    opengl.write(aux);
+    aux.release();
+    // glutSwapBuffers();
 }
