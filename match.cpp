@@ -18,7 +18,7 @@ using namespace cv;
 /** @function main */
 void displayMe(void*);
 static void Redraw (void*);
-// double fovx,fovy,focalLength,aspectRatio; Point2d principalPt;
+double fovx,fovy,focalLength,aspectRatio; Point2d principalPt;
 VideoWriter opengl;
 
 
@@ -46,7 +46,6 @@ int main( int argc, char** argv )
     // std::cout << distortion << "\n";
 
 
-    // calibrationMatrixValues(intrinsics, Size(640,480), 0.0, 0.0, fovx, fovy, focalLength, principalPt, aspectRatio);
 
     Mat src;
     Mat img_object = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
@@ -72,6 +71,9 @@ int main( int argc, char** argv )
     outputVideo.open("output.avi" , ex, cap.get(CV_CAP_PROP_FPS),S, true);
 
     namedWindow("window", CV_WINDOW_OPENGL);
+
+
+    calibrationMatrixValues(intrinsics, S, 0.0, 0.0, fovx, fovy, focalLength, principalPt, aspectRatio);
 
     // ogl::Texture2D tex;
 
@@ -364,31 +366,71 @@ static void Redraw (void*)
     glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, white );
     glMaterialf( GL_FRONT_AND_BACK, GL_SHININESS, 50.0f );
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    // // glLoadMatrixd(mtsaiopengl_projection);
-    // glLoadMatrixd(m);
+    // glMatrixMode(GL_PROJECTION);
+    // glLoadIdentity();
+    // // // glLoadMatrixd(mtsaiopengl_projection);
+    // // glLoadMatrixd(m);
 
-    glLoadMatrixd(pr);
+    // glLoadMatrixd(pr);
+    // glEnable(GL_LIGHTING);
+    // glEnable(GL_LIGHT0);
+
+
+    // glMatrixMode(GL_MODELVIEW);
+    // glLoadIdentity();
+
+    // glLoadMatrixd(mv);
+  
+    // glPushMatrix();  
+
+    // glScaled(0.1,0.1,1);
+    // glScaled(0.5,0.5,1);
+    // glTranslatef(0,1,0);
+  
+    // glRotatef(90, 1.0, 0.0, 0.0);
+    // // glutSolidTeapot(1.0);
+    // glutSolidCube(1.0);
+    // glPopMatrix();
+
+
+     glMatrixMode(GL_PROJECTION);
+
+    gluPerspective( /* field of view in degree */ fovy,
+                   /* aspect ratio */ 1.0/aspectRatio,
+                   /* Z near */ 0.1, /* Z far */ 1000.0);
+
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
+    
+    glLoadIdentity();
+
+    glScaled(0.5,0.5,0.5);
+    
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glLoadMatrixd(mv);
-  
-    glPushMatrix();  
+
+    glRotatef(rvec.at<double>(0)*30, 1,0,0);
+    glRotatef(rvec.at<double>(1)*(-30), 0,1,0);
+    glRotatef(rvec.at<double>(2)*(-30), 0,0,1);
 
     glScaled(0.1,0.1,1);
-    glScaled(0.5,0.5,1);
-    glTranslatef(0,1,0);
-  
-    glRotatef(90, 1.0, 0.0, 0.0);
-    // glutSolidTeapot(1.0);
+
+
+    // glTranslatef(7.0f,0.0f,1.0f);
+
+    // glTranslatef(10.5f, 0.0f, 0.0f);  // Move right and into the screen
+    // glTranslatef(tvec.at<double>(0),0,0);//tvec.at<double>(1)-129,tvec.at<double>(2)/50);
+    // glTranslatef(0,tvec.at<double>(1),0);
+
+    glTranslatef(tvec.at<double>(0)/22.0f,-tvec.at<double>(1)/22.0f, 0);
+
+    std::cout << tvec.at<double>(2) << "\n";
+
+    // glutWireCube(1); 
     glutSolidCube(1.0);
-    glPopMatrix();
 
 
     Mat aux = Mat(height, width, CV_8UC3);
