@@ -144,15 +144,15 @@ int main( int argc, char** argv )
             if( dist > max_dist ) max_dist = dist;
         }
 
-    
-        std::vector< DMatch > good_matches;
+        
+        std::vector<DMatch> setOfMatches;
 
         // getting good matches
         for( int i = 0; i < desc_object.rows; i++ )
         { 
             if( matches[i].distance < max(4*min_dist, 0.02) )
             { 
-                good_matches.push_back( matches[i]); 
+                setOfMatches.push_back( matches[i]); 
             }
         }
 
@@ -160,14 +160,14 @@ int main( int argc, char** argv )
         std::vector<Point2f> scene;
 
         // getting the keypoints from the good matches
-        for( int i = 0; i < good_matches.size(); i++ )
+        for( int i = 0; i < setOfMatches.size(); i++ )
         {
-            obj.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
-            scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
+            obj.push_back( keypoints_object[ setOfMatches[i].queryIdx ].pt );
+            scene.push_back( keypoints_scene[ setOfMatches[i].trainIdx ].pt );
         }
 
-
-        if(good_matches.size() >= 4)
+        // at least 4 points are necessary
+        if(setOfMatches.size() >= 4)
         {
 
             // getting homography
