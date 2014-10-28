@@ -1,6 +1,6 @@
 %YAML:1.0
 frameCount: 77
-calibrationDate: "Sun Oct 12 14:14:16 2014\n"
+calibrationDate: "Tue Oct 28 18:54:33 2014\n"
 intrinsic: !!opencv-matrix
    rows: 3
    cols: 3
